@@ -1,3 +1,19 @@
+/*
+    Copyright (c) 2012, Russell Hay <me@russellhay.com>
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose with or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
 #define BUILDING_NODE_EXTENSION
 
 #include "spi_binding.h"
@@ -36,8 +52,10 @@ void Spi::Initialize(Handle<Object> target) {
                               FunctionTemplate::New(Transfer)->GetFunction());
   t->PrototypeTemplate()->Set(String::NewSymbol("mode"),
                               FunctionTemplate::New(GetSetMode)->GetFunction());
-  t->PrototypeTemplate()->Set(String::NewSymbol("chip_select"),
-                              FunctionTemplate::New(SetChipSelect)->GetFunction());
+  t->PrototypeTemplate()->Set(String::NewSymbol("chipSelect"),
+                              FunctionTemplate::New(GetSetChipSelect)->GetFunction());
+  t->PrototypeTemplate()->Set(String::NewSymbol("bitsPerWord"),
+                              FunctionTemplate::New(GetSetBitsPerWord)->GetFunction());
 
   constructor = Persistent<Function>::New(t->GetFunction());
   target->Set(String::NewSymbol("_spi"), constructor);
@@ -116,8 +134,9 @@ SPI_FUNC_IMPL(GetSetMode) {
   }
   FUNCTION_CHAIN;
 }
-SPI_FUNC_IMPL(SetChipSelect) {
+SPI_FUNC_IMPL(GetSetChipSelect) {
   FUNCTION_PREAMBLE;
+  GETTER(1, Number::New(self->m_mode&(SPI_CS_HIGH|SPI_NO_CS)));
   REQ_INT_ARG(0, in_value);
   ASSERT_NOT_OPEN;
 
@@ -137,8 +156,27 @@ SPI_FUNC_IMPL(SetChipSelect) {
 
   FUNCTION_CHAIN;
 }
+
+SPI_FUNC_IMPL(GetSetBitsPerWord) {
+  FUNCTION_PREAMBLE;
+  GETTER(1, Number::New(self->m_bits_per_word));
+  REQ_INT_ARG(0, in_value);
+  ASSERT_NOT_OPEN;
+
+  if (in_value <= 0) {
+    ThrowException(Exception::RangeError(String::New(
+      "Bits Per Word must be > 0"
+    )));
+  }
+
+  // TODO: Bounds checking?  Need to look up what the max value is
+  self->m_bits_per_word = in_value;
+
+  FUNCTION_CHAIN;
+}
+
 SPI_FUNC_EMPTY(SetMaxSpeed);
 SPI_FUNC_EMPTY(Set3Wire);
 SPI_FUNC_EMPTY(SetLoop);
 SPI_FUNC_EMPTY(SetLSB);
-SPI_FUNC_EMPTY(SetWordSize);
+

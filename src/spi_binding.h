@@ -35,7 +35,7 @@ class Spi : ObjectWrap {
         static void Initialize(Handle<Object> target);
 
     private:
-        Spi() : m_fd(-1), m_mode(0) { }
+        Spi() : m_fd(-1), m_mode(0), m_bits_per_word(8) { }
         ~Spi() { } // Probably close fd if it's open
 
         SPI_FUNC(New);
@@ -43,15 +43,16 @@ class Spi : ObjectWrap {
         SPI_FUNC(Close);
         SPI_FUNC(Transfer);
         SPI_FUNC(GetSetMode);
-        SPI_FUNC(SetChipSelect);
+        SPI_FUNC(GetSetChipSelect);
         SPI_FUNC(SetMaxSpeed);
         SPI_FUNC(Set3Wire);
         SPI_FUNC(SetLoop);
         SPI_FUNC(SetLSB);
-        SPI_FUNC(SetWordSize);
+        SPI_FUNC(GetSetBitsPerWord);
 
         int m_fd;
         int m_mode;
+        int m_bits_per_word;
 };
 
 #define FUNCTION_PREAMBLE HandleScope scope;                \
