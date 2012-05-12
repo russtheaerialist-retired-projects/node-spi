@@ -57,6 +57,9 @@ This is the interface that the normal Spi interface uses, but having a good
 understanding of this part is important, as some people may want to use the
 native interface directly.
 
+Creating, Opening, and Closing the device
+-----------------------------------------
+
 **\_spi.Spi constructor** - The constructor takes a single argument, the path
 to the spi dev file in /dev.  We do not check that the file exists until you
 call open.
@@ -69,6 +72,9 @@ allow you to change the settings to the device.
 the destructor for the underlying C++ class does not call close(), but that
 might change in the future.  You should always call close() when you are done
 with the device.
+
+Configuring the Device
+----------------------
 
 The following functions all act as getter/setters.  If you do not pass an
 argument, it will return the value of the setting.  If you pass in a value,
@@ -83,4 +89,48 @@ should always be the first thing you call after open() if you plan to call it.
 By default it is set to SPI_MODE_0.  The spi namespace provides constants for
 the four SPI_MODE_X values (X being 0-3).
 
-**chipSelect()** - This
+**chipSelect()** - This allows you to specify if the chip select signal should
+be used, and if it should go high to select the chip or low.  It defaults to
+signal low.  Pass in SPI_NO_CS to turn off Chip Select, and SPI_CS_HIGH to
+turn on sending high to select.
+
+**bitsPerWord()** - This allows you to specify the bits per word to send.
+This defaults to 8-bits.  Check your device's datasheet for this value.
+
+**bitOrder()** - This allows you to specify the order of the bits.  We default
+to MSB, but send True as the argument if you want LSB.  This might not be the
+best API.
+
+**maxSpeed()** - This allows you to set the max transfer speed.  Again, check
+your device's datasheet.  This is in Hz and defaults to 1Mhz.
+
+**halfDuplex()** - Set this to True if your device does not support full duplex.
+This isn't fully supported yet, as I need to add a Read/Write function calls that
+is exposed to javascript. *This would be a great workitem for anyone who wants
+to contribute*
+
+**loopback()** - This sets the Loopback bit on the SPI controller.  I don't
+fully understand what this is used for, but give you the ability to toggle it
+if you'd like.
+
+Getting and Sending Data
+------------------------
+
+**transfer()** - This takes two buffers, a write buffer and a read buffer.
+If you only want to do one way transfer, then pass null to that argument.  For
+example, writes would look like this:
+
+```javascript
+var buff = new Buffer([0x12, 0x12, 0x12]);
+spi.transfer(buff, null);
+```
+
+Reads would look like this:
+
+```javascript
+var buff = new Buffer(8);
+spi.transfer(null, buff);
+```
+
+Remember that these native apis are currently blocking.  I will update, once I
+have the hardware to test this properly, to be async instead of blocking.
