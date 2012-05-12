@@ -35,7 +35,8 @@ class Spi : ObjectWrap {
         static void Initialize(Handle<Object> target);
 
     private:
-        Spi() : m_fd(-1), m_mode(0), m_bits_per_word(8) { }
+        Spi() : m_fd(-1), m_mode(0), m_bits_per_word(8),
+                m_max_speed(1000000) { }
         ~Spi() { } // Probably close fd if it's open
 
         SPI_FUNC(New);
@@ -44,16 +45,21 @@ class Spi : ObjectWrap {
         SPI_FUNC(Transfer);
         SPI_FUNC(GetSetMode);
         SPI_FUNC(GetSetChipSelect);
-        SPI_FUNC(SetMaxSpeed);
-        SPI_FUNC(Set3Wire);
-        SPI_FUNC(SetLoop);
-        SPI_FUNC(SetLSB);
+        SPI_FUNC(GetSetMaxSpeed);
+        SPI_FUNC(GetSet3Wire);
+        SPI_FUNC(GetSetLoop);
+        SPI_FUNC(GetSetBitOrder);
         SPI_FUNC(GetSetBitsPerWord);
+
+        Handle<Value> full_duplex_transfer(char *write, char *read, size_t length);
 
         int m_fd;
         int m_mode;
         int m_bits_per_word;
+        int m_max_speed;
 };
+
+#define ERROR(STR) ThrowException(Exception::Error(String::New(STR)))
 
 #define FUNCTION_PREAMBLE HandleScope scope;                \
              Spi* self = ObjectWrap::Unwrap<Spi>(args.This())
@@ -85,3 +91,36 @@ class Spi : ObjectWrap {
     return ThrowException(Exception::TypeError(                                \
                           String::New("Argument " #I " must be an integer" )));\
   VAR = args[I]->Int32Value();
+
+#define REQ_BOOL_ARG(I, VAR)                                                   \
+  bool VAR;                                                                     \
+  if (args.Length() <= I || !args[I]->IsBoolean())                             \
+    return ThrowException(Exception::TypeError(                                \
+                          String::New("Argument " #I " must be a boolean" ))); \
+  VAR = args[I]->BooleanValue();
+
+#define REQ_INT_ARG_GT(I, NAME, VAR, VAL)                                      \
+  REQ_INT_ARG(I, VAR);                                                         \
+  if (VAR <= VAL)                                                              \
+    return ThrowException(Exception::TypeError(                                \
+       String::New(#NAME " must be greater than " #VAL )));
+
+#define SPI_FUNC_BOOLEAN_TOGGLE_IMPL(NAME, ARGUMENT)                           \
+SPI_FUNC_IMPL(NAME) {                                                          \
+  FUNCTION_PREAMBLE;                                                           \
+  GETTER(1, Boolean::New((self->m_mode&ARGUMENT) > 0));                        \
+  REQ_BOOL_ARG(0, in_value);                                                   \
+  if (in_value) {                                                              \
+    self->m_mode |= ARGUMENT;                                                  \
+  } else {                                                                     \
+    self->m_mode &= ~ARGUMENT;                                                 \
+  }                                                                            \
+  FUNCTION_CHAIN;                                                              \
+}
+
+#define SET_IOCTL_VALUE(FD, CTRL, VALUE)                                       \
+  retval = ioctl(FD, CTRL, &(VALUE));                                          \
+  if (retval == -1) return ThrowException(Exception::Error(String::New(        \
+       "Unable to set " #CTRL)));
+
+#define MAX(a,b) (a>b ? a:b)

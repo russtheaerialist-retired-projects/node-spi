@@ -13,8 +13,8 @@ the nodejs philosophy, but I think it's important, when dealing with blocking
 interfaces, to get the code working in a blocking manner, and then introduce
 the async calls using eio.*
 
-Base Usage
-==========
+Basic Usage
+===========
 
 ```javascript
 var spi = require("spi");
@@ -42,11 +42,12 @@ Ideally, for each SPI device that is being controlled should have it's own
 object that implements the protocol necessary to talk to your device so that
 the device protocol is defined in one place.
 
-An example is included in the examples directory (**soon**) that shows how I
-wrapped node-spi to control the
+An example project is
+[node-adafruit-pixel](https://github.com/RussTheAerialist/node-adafruit-pixel)
+which is a node module to control the
 [AdaFruit RGB Pixels](http://www.adafruit.com/products/738).  The interface is
 defined in terms of color and pixels, and not in messages being sent via the
-SPI bus.
+SPI bus, but it uses node-spi to do it's work.
 
 Native Api Reference
 ====================
@@ -82,4 +83,4 @@ should always be the first thing you call after open() if you plan to call it.
 By default it is set to SPI_MODE_0.  The spi namespace provides constants for
 the four SPI_MODE_X values (X being 0-3).
 
-**chipSelect()** - This 
+**chipSelect()** - This
