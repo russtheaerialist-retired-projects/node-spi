@@ -2,7 +2,7 @@
    "name": "spi",
    "version": "0.0.1",
    "description": "JS Interface for the SPI bus",
-   "author": "Russell Hay <me@russellhay.com>",
+   "author": "Russell Hay <me@russellhay.com> (http://russellhay.com)",
    "repository": {
      "type": "git",
      "url": "git://github.com/RussTheAerialist/node-spi.git"
