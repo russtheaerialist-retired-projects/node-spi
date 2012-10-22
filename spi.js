@@ -18,21 +18,22 @@
 
 var _spi = require('bindings')('_spi.node');
 
-var MODE = [
-  _spi.SPI_MODE_0,
-  _spi.SPI_MODE_1,
-  _spi.SPI_MODE_2,
-  _spi.SPI_MODE_3
-];
+// Consistance with docs
+var MODE = {
+	MODE_0: _spi.MODE_0
+, MODE_1: _spi.MODE_1
+, MODE_2: _spi.MODE_2
+, MODE_3: _spi.MODE_3
+};
 
 var CS = {
-  'high': _spi.SPI_CS_HIGH,
-  'low': 0,
-  'none': _spi.SPI_NO_CS
+	none: _spi.NO_CS
+, high: _spi.CS_HIGH
+, low:  _spi.CS_LOW
 };
 
 function isFunction(object) {
-   return object && getClass.call(object) == '[object Function]';
+   return object && typeof object == 'function';
 }
 
 var Spi = function(device, options, callback) {
@@ -43,42 +44,46 @@ var Spi = function(device, options, callback) {
     options = {};
   }
 
-  options = options || { }; // Default to an empty object
+  options = options || {}; // Default to an empty object
 
   for(var attrname in options) {
     var value = options[attrname];
     if (attrname in this._spi) {
-      console.trace("Setting " + attrname + "=" + value);
+      // console.trace("Setting " + attrname + "=" + value);
       this._spi[attrname](value);
     }
   }
 
-  this._spi.open(device);
+  this.device = device;
 
-  callback(this); // TODO: Update once open is async;
+  // this._spi.open(device);
+
+  isFunction(callback) && callback(this); // TODO: Update once open is async;
+}
+
+Spi.prototype.open = function() {
+	return this._spi.open(this.device);
+}
+
+Spi.prototype.close = function() {
+	return this._spi.close();
 }
 
 Spi.prototype.write = function(buf, callback) {
   this._spi.transfer(buf, null);
 
-  if (callback !== undefined) {
-    callback(this, buf); // TODO: Update once transfer is async;
-  }
+  isFunction(callback) && callback(this, buf); // TODO: Update once open is async;
 }
 
 Spi.prototype.read = function(buf, callback) {
   this._spi.transfer(null, buf);
 
-  if (callback !== undefined) {
-    callback(this, buf); // TODO: Update once transfer is async;
-  }
+  isFunction(callback) && callback(this, buf); // TODO: Update once open is async;
 }
-Spi.prototype.transfer = function(wrbuf, rdbuf, callback) {
-  this._spi.transfer(wrbuf, rdbuf);
+Spi.prototype.transfer = function(txbuf, rxbuf, callback) {
+  this._spi.transfer(txbuf, rxbuf);
 
-  if (callback !== undefined) {
-    callback(this, rdbuf); // TODO: Update once transfer is async;
-  }
+  isFunction(callback) && callback(this, rxbuf); // TODO: Update once open is async;
 }
 
 module.exports.MODE = MODE;
