@@ -21,8 +21,8 @@ var spi = require("spi");
 
 var MyDevice = new spi.Spi("/dev/spidev1.1", {
   "mode": 0, // Always do mode first if you need something other than Mode 0
-  "chip_select": spi.NO_CS
-  "max_speed": 1000000, // In Hz
+  "chipSelect": spi.NO_CS
+  "maxSpeed": 1000000, // In Hz
   "size": 8, // How many bits per word
 });
 
