@@ -87,7 +87,7 @@ void Spi::Initialize(Handle<Object> target) {
 
   // t.prototype.delay = GetSetDelay;
   t->PrototypeTemplate()->Set(String::NewSymbol("delay"),
-  														FunctionTemplate::New(GetSetDelay)->GetFunction());
+  			      FunctionTemplate::New(GetSetDelay)->GetFunction());
 
   // t.prototype.loopback = GetSetLoop;
   t->PrototypeTemplate()->Set(String::NewSymbol("loopback"),
@@ -235,14 +235,7 @@ Handle<Value> Spi::Transfer(const Arguments &args) {
   FUNCTION_CHAIN;
 }
 
-Handle<Value> Spi::full_duplex_transfer(char *write,
-																				char *read,
-																				size_t length,
-																				uint32_t speed,
-																				uint16_t delay,
-																				uint8_t bits) {
-  // struct spi_ioc_transfer data = { 0 };
-
+Handle<Value> Spi::full_duplex_transfer(char *write, char *read, size_t length, uint32_t speed, uint16_t delay, uint8_t bits) {
   struct spi_ioc_transfer data = {
 	  (unsigned long)write,
 	  (unsigned long)read,
@@ -259,7 +252,6 @@ Handle<Value> Spi::full_duplex_transfer(char *write,
   }
 
   return v8::Integer::New(ret);
-  // return ret;
 }
 
 // This overrides any of the OTHER set functions since modes are predefined

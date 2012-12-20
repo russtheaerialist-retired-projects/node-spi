@@ -36,11 +36,11 @@ class Spi : ObjectWrap {
 
     private:
         Spi() : m_fd(-1),
-        				m_mode(0),
-                m_max_speed(1000000),  // default speed in Hz () 1MHz
-        				m_delay(0),            // default bits per word
-                m_bits_per_word(8) { } // expose delay to options
-        ~Spi() { } // Probably close fd if it's open
+	        m_mode(0),
+	        m_max_speed(1000000),  // default speed in Hz () 1MHz
+	        m_delay(0),            // default bits per word
+	        m_bits_per_word(8) { } // expose delay to options
+                ~Spi() { } // Probably close fd if it's open
 
         SPI_FUNC(New);
         SPI_FUNC(Open);
