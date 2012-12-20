@@ -20,16 +20,16 @@ var _spi = require('bindings')('_spi.node');
 
 // Consistance with docs
 var MODE = {
-	MODE_0: _spi.MODE_0
-, MODE_1: _spi.MODE_1
-, MODE_2: _spi.MODE_2
-, MODE_3: _spi.MODE_3
+    MODE_0: _spi.MODE_0, 
+    MODE_1: _spi.MODE_1,
+    MODE_2: _spi.MODE_2,
+    MODE_3: _spi.MODE_3
 };
 
 var CS = {
-	none: _spi.NO_CS
-, high: _spi.CS_HIGH
-, low:  _spi.CS_LOW
+    none: _spi.NO_CS,
+    high: _spi.CS_HIGH,
+    low:  _spi.CS_LOW
 };
 
 function isFunction(object) {
@@ -56,7 +56,7 @@ var Spi = function(device, options, callback) {
 
   this.device = device;
 
-  // this._spi.open(device);
+  this._spi.open(device);
 
   isFunction(callback) && callback(this); // TODO: Update once open is async;
 }
@@ -81,6 +81,7 @@ Spi.prototype.read = function(buf, callback) {
   isFunction(callback) && callback(this, buf); // TODO: Update once open is async;
 }
 Spi.prototype.transfer = function(txbuf, rxbuf, callback) {
+  rxbuf = new Buffer(txbuf.length);  // tx and rx buffers need to be the same size
   this._spi.transfer(txbuf, rxbuf);
 
   isFunction(callback) && callback(this, rxbuf); // TODO: Update once open is async;
