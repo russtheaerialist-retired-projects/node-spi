@@ -1,17 +1,14 @@
 node-spi
 ========
 
-A NodeJS interface to the SPI bus on embedded linux machines.
+A NodeJS interface to the SPI bus typically found on embedded linux machines.
 
 There is a native interface and a wrapped JS interface with a slightly
 better API.
 
-**THIS CODE IS NOT FINISHED YET, NOTHING IS FUNCTIONING YET!**
-
-*Note: The first version will be blocking.  I know this is antithetics to
-the nodejs philosophy, but I think it's important, when dealing with blocking
-interfaces, to get the code working in a blocking manner, and then introduce
-the async calls using eio.*
+*Note: The first version will be blocking.  I know this is antithetical to
+the node.js philosophy, but I think its important to get the code working in a 
+blocking manner first, and then introduce the async calls using eio.*
 
 Basic Usage
 ===========
@@ -19,18 +16,18 @@ Basic Usage
 ```javascript
 var spi = require("spi");
 
-var MyDevice = new spi.Spi("/dev/spidev1.1", {
-  "mode": 0, // Always do mode first if you need something other than Mode 0
+var MyDevice = new spi.Spi("/dev/spidev0.1", {
+  "mode": 0,            // do mode first if you need something other than Mode 0
   "chipSelect": spi.NO_CS
-  "maxSpeed": 1000000, // In Hz
-  "size": 8, // How many bits per word
+  "maxSpeed": 1000000,  // In Hz
+  "size": 8,            // How many bits per word
 });
 
 var out_buffer = new Buffer([ 0x23, 0x48, 0xAF, 0x19, 0x19, 0x19 ]);
 
 MyDevice.transfer(out_buffer, outbuffer.Length(),
   function(device, recv_buffer) {
-  // Do Something with the data in the recv buffer, if anything exists
+  // Do something with the data in the recv buffer, if anything exists
 });
 ```
 
@@ -42,12 +39,10 @@ Ideally, for each SPI device that is being controlled should have it's own
 object that implements the protocol necessary to talk to your device so that
 the device protocol is defined in one place.
 
-An example project is
-[node-adafruit-pixel](https://github.com/RussTheAerialist/node-adafruit-pixel)
-which is a node module to control the
-[AdaFruit RGB Pixels](http://www.adafruit.com/products/738).  The interface is
-defined in terms of color and pixels, and not in messages being sent via the
-SPI bus, but it uses node-spi to do it's work.
+An example project is [node-adafruit-pixel](https://github.com/RussTheAerialist/node-adafruit-pixel)
+which is a node module to control the [AdaFruit RGB Pixels](http://www.adafruit.com/products/738).
+The interface is defined in terms of color and pixels, and not in messages 
+being sent via the SPI bus, but it uses node-spi to do it's work.
 
 Native Api Reference
 ====================
