@@ -90,8 +90,10 @@ Spi.prototype.transfer = function(txbuf, rxbuf, callback) {
 Spi.prototype.mode = function(mode) {
     if (typeof(mode) != 'undefined')
 	if (mode == MODE['MODE_0'] || mode == MODE['MODE_1'] ||
-	    mode == MODE['MODE_2'] || mode == MODE['MODE_3'])
-            return this._spi['mode'](mode);
+	    mode == MODE['MODE_2'] || mode == MODE['MODE_3']) {
+            this._spi['mode'](mode);
+	    return this._spi;
+	}
         else {
 	    console.log('Illegal mode');
             return -1;
@@ -102,8 +104,10 @@ Spi.prototype.mode = function(mode) {
 
 Spi.prototype.chipSelect = function(cs) {
     if (typeof(cs) != 'undefined')
-	if (cs == CS['none'] || cs == CS['high'] || cs == MODE['low'])
-            return this._spi['chipSelect'](cs);
+	if (cs == CS['none'] || cs == CS['high'] || cs == MODE['low']) {
+            this._spi['chipSelect'](cs);
+	    return this._spi;
+	}
         else {
 	    console.log('Illegal chip selection');
             return -1;
@@ -114,8 +118,10 @@ Spi.prototype.chipSelect = function(cs) {
 
 Spi.prototype.bitsPerWord = function(bpw) {
     if (typeof(bpw) != 'undefined')
-	if (bpw > 1)
-            return this._spi['bitsPerWord'](bpw);
+	if (bpw > 1) {
+            this._spi['bitsPerWord'](bpw);
+	    return this._spi;
+	}
         else {
 	    console.log('Illegal bits per word');
             return -1;
@@ -126,8 +132,10 @@ Spi.prototype.bitsPerWord = function(bpw) {
 
 Spi.prototype.bitOrder = function(bo) {
     if (typeof(bo) != 'undefined')
-	if (bo == ORDER['msb'] || bo == ORDER['lsb'])
-            return this._spi['bitOrder'](bo);
+	if (bo == ORDER['msb'] || bo == ORDER['lsb']) {
+            this._spi['bitOrder'](bo);
+	    return this._spi;
+	}
         else {
 	    console.log('Illegal bit order');
             return -1;
@@ -138,32 +146,42 @@ Spi.prototype.bitOrder = function(bo) {
 
 Spi.prototype.maxSpeed = function(speed) {
     if (typeof(speed) != 'undefined')
-	if (speed > 0)
-            return this._spi['maxSpeed'](speed);
+	if (speed > 0) {
+            this._spi['maxSpeed'](speed);
+            return this._spi;
+	}
         else {
 	    console.log('Speed must be positive');
 	    return -1;
-	}
+	}	    
     else
 	return this._spi['maxSpeed']();
 }
 
 Spi.prototype.halfDuplex = function(duplex) {
     if (typeof(duplex) != 'undefined')
-	if (duplex)
-	    return this._spi['halfDuplex'](true);
-        else
-	    return this._spi['halfDuplex'](false);
+	if (duplex) {
+	    this._spi['halfDuplex'](true);
+	    return this._spi;
+	}
+        else {
+	    this._spi['halfDuplex'](false);
+            return this._spi;
+	}
     else
 	return this._spi['halfDuplex']();
 }
 
 Spi.prototype.loopback = function(loop) {
     if (typeof(loop) != 'undefined')
-	if (loop)
-	    return this._spi['loopback'](true);
-        else
-	    return this._spi['loopback'](false);
+	if (loop) {
+	    this._spi['loopback'](true);
+	    return this._spi;
+	}
+        else {
+	    this._spi['loopback'](false);
+	    return this._spi;
+	}
     else
 	return this._spi['loopback']();
 }
