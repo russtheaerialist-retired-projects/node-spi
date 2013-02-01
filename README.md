@@ -87,7 +87,7 @@ Example:
 var spi = new SPI.Spi('/dev/spidev0.0', {}, function(s){s.open();});
 ```
 
-**open()** - This function takes no arguments and will open the device, setting
+**open()** - This function takes no arguments and will open the device using
 all of the options that were previously set.  Once the device is open, we do not
 allow you to change the settings on the device.
 
