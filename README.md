@@ -154,8 +154,15 @@ only reads when a byte is written so communicaton is usually full duplex.
 
 Exmple:
 ```javascript
-var buff = new Buffer([0x12, 0x12, 0x12]);
-spi.transfer(buff, null);
+var txbuf = new Buffer([0x80, 0x00]);
+var rxbuf = new Buffer([0x00, 0x00]);
+
+spi.transfer(txbuf, rxbuf, function(device, buf) {
+    var s = "";
+    for (var i=0; i < buf.length; i++)
+        s = s + buf[i] + " ";
+        console.log(s);
+  });
 ```
 
 As a convenience feature, read and write functions pad zeros in the opposite 
