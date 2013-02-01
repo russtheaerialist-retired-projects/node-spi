@@ -69,10 +69,11 @@ var spi = new SPI.Spi('/dev/spidev0.1');
 Options can include:
 * mode
 * chipSelect
-* maxSpeed
 * bitsPerWord
 * bitOrder
-* delay
+* maxSpeed
+* halfDuplex
+* loopback
 
 Example:
 ```javascript
