@@ -80,7 +80,7 @@ var spi = new SPI.Spi('/dev/spidev0.0', {'mode': SPI.MODE['MODE_0']});
 ```
 
 The callback returns a handle to the newly created SPI object. It might be 
-handy to .open() it if you don't need to change options.
+handy to .open() it if you set all of your options in one shot.
 
 Example:
 ```javascript
