@@ -6,7 +6,7 @@ A NodeJS interface to the SPI bus typically found on embedded linux machines.
 There is a native interface and a wrapped JS interface with a slightly
 better API.
 
-*Note: The first version will be blocking.  I know this is antithetical to
+*Note: The first version will be blocking. I know this is antithetical to
 the node.js philosophy, but I think its important to get the code working in a 
 blocking manner first, and then introduce the async calls using eio.*
 
@@ -14,21 +14,23 @@ Basic Usage
 ===========
 
 ```javascript
-var spi = require("spi");
+var SPI = require('spi');
 
-var MyDevice = new spi.Spi("/dev/spidev0.1", {
-  "mode": 0,            // do mode first if you need something other than Mode 0
-  "chipSelect": spi.NO_CS
-  "maxSpeed": 1000000,  // In Hz
-  "size": 8,            // How many bits per word
-});
+var spi = new SPI.Spi('/dev/spidev0.0', {
+    'mode': SPI.MODE['MODE_0'],  // always set mode as the first option
+    'chipSelect': SPI.CS['none'] // 'none', 'high', 'low'
+  }, function(s){s.open();});
 
-var out_buffer = new Buffer([ 0x23, 0x48, 0xAF, 0x19, 0x19, 0x19 ]);
+var txbuf = new Buffer([ 0x23, 0x48, 0xAF, 0x19, 0x19, 0x19 ]);
+var rxbuf = new Buffer([ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ]);
 
-MyDevice.transfer(out_buffer, outbuffer.Length(),
-  function(device, recv_buffer) {
-  // Do something with the data in the recv buffer, if anything exists
-});
+spi.transfer(txbuf, rxbuf, function(device, buf) {
+    // rxbuf and buf should be the same here
+    var s = "";
+    for (var i=0; i < buf.length; i++)
+        s = s + buf[i] + " ";
+        console.log(s + "- " + new Date().getTime());
+  });
 ```
 
 How you should **really** use the library
@@ -47,7 +49,7 @@ being sent via the SPI bus, but it uses node-spi to do it's work.
 Native Api Reference
 ====================
 
-This section documents the native api which is defined in module \_spi.node.
+This section documents the native api which is defined in module _spi.node.
 This is the interface that the normal Spi interface uses, but having a good
 understanding of this part is important, as some people may want to use the
 native interface directly.
@@ -55,13 +57,50 @@ native interface directly.
 Creating, Opening, and Closing the device
 -----------------------------------------
 
-**\_spi.Spi constructor** - The constructor takes a single argument, the path
-to the spi dev file in /dev.  We do not check that the file exists until you
-call open.
+**\_spi.Spi constructor** - The constructor only requires the path to the spi 
+dev file in /dev. Options and a callback are not required but can be specified.
+
+Example:
+```javascript
+var spi = new SPI.Spi('/dev/spidev0.1');
+```
+
+Options can include:
+* **mode**: Can be one of 'MODE_0', 'MODE_1', 'MODE_2' or 'MODE_3'. It should always be the first option.
+* **chipSelect**: Can be one of 'none', 'high' or 'low'.
+* **maxSpeed**: The maximum bitrate in Hz.
+* **size**: (AKA: bits per word) Anything other than 8 is not yet supported on the Raspberry Pi.
+* **bitOrder**: true = MSB first, false = LSB first.
+* **delay**:
+* **3Wire**:
+
+Example:
+```javascript
+var spi = new SPI.Spi('/dev/spidev0.0', {'mode': SPI.MODE['MODE_0']});
+```
+
+The callback returns a handle to the newly created SPI object. It might be 
+handy to .open() it if you don't need to change options.
+
+Example:
+```javascript
+var spi = new SPI.Spi('/dev/spidev0.0', {}, function(s){s.open;});
+```
 
 **open()** - This function takes no arguments and will open the device, setting
 all of the options that were previously set.  Once the device is open, we do not
-allow you to change the settings to the device.
+allow you to change the settings on the device.
+
+Example:
+```javascript
+var spi = new SPI.Spi('/dev/spidev0.0', {'mode': SPI.MODE['MODE_0']});
+
+// get/set aditional options
+spi.maxSpeed(20000); // in Hz
+console.log('max speed: ' + spi.maxSpeed());
+
+spi.open(); // once opened, you can't change the options
+```
 
 **close()** - This function should always be called before ending.  Right now
 the destructor for the underlying C++ class does not call close(), but that
@@ -110,21 +149,43 @@ if you'd like.
 
 Getting and Sending Data
 ------------------------
+**transfer()** - This takes two buffers, a write and a read buffer. SPI
+only reads when a byte is written so communicaton is usually full duplex.
 
-**transfer()** - This takes two buffers, a write buffer and a read buffer.
-If you only want to do one way transfer, then pass null to that argument.  For
-example, writes would look like this:
-
+Exmple:
 ```javascript
 var buff = new Buffer([0x12, 0x12, 0x12]);
 spi.transfer(buff, null);
 ```
 
-Reads would look like this:
+As a convenience feature, read and write functions pad zeros in the opposite 
+direction to make simple read and writes work.
 
+**read(buffer, callback)** - Reads as much data as the given buffer is big. 
+The results of the read are available in the callback.
+
+Example:
 ```javascript
-var buff = new Buffer(8);
-spi.transfer(null, buff);
+var buf1 = new Buffer(8);
+spi.read(buf1, function(device, buf2) {
+    var s = "";
+    for (var i=0; i < buf.length; i++)
+      s = s + buf[i] + " ";
+    console.log(s);
+  });
+```
+
+**write(buffer, callback)** - Writes out the given buffer.
+
+Example:
+```javascript
+var buf = new Buffer([0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0]);
+spi.write(buf, function(device, buf2) {
+    var s = "";
+    for (var i=0; i < buf.length; i++)
+      s = s + buf[i] + " ";
+    console.log(s);
+  });
 ```
 
 Remember that these native apis are currently blocking.  I will update, once I

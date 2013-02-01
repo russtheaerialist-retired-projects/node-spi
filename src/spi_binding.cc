@@ -146,6 +146,9 @@ void Spi::Initialize(Handle<Object> target) {
   target->Set(v8::String::NewSymbol("NO_CS"), v8::Integer::New(SPI_NO_CS));
   target->Set(v8::String::NewSymbol("CS_LOW"), v8::Integer::New(0));
   target->Set(v8::String::NewSymbol("CS_HIGH"), v8::Integer::New(SPI_CS_HIGH));
+
+  target->Set(v8::String::NewSymbol("ORDER_MSB"), v8::Boolean::New(false));
+  target->Set(v8::String::NewSymbol("ORDER_LSB"), v8::Boolean::New(true));
 }
 
 // new Spi(string device)
