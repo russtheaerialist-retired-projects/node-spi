@@ -43,54 +43,117 @@ Persistent<Function> Spi::constructor;
 void Spi::Initialize(Handle<Object> target) {
   HandleScope scope;
 
+  // var t = function() {};
   Local<FunctionTemplate> t = FunctionTemplate::New(New);
 
+  // t = function _spi() {};
   t->SetClassName(String::NewSymbol("_spi"));
   t->InstanceTemplate()->SetInternalFieldCount(1);
 
+  // t.prototype.open = open;
   t->PrototypeTemplate()->Set(String::NewSymbol("open"),
                               FunctionTemplate::New(Open)->GetFunction());
+  // t.prototype.close = close;
   t->PrototypeTemplate()->Set(String::NewSymbol("close"),
                               FunctionTemplate::New(Close)->GetFunction());
+
+  // t.prototype.transfer = transfer;
   t->PrototypeTemplate()->Set(String::NewSymbol("transfer"),
                               FunctionTemplate::New(Transfer)->GetFunction());
+
+  // t.prototype.mode = GetSetMode;
   t->PrototypeTemplate()->Set(String::NewSymbol("mode"),
                               FunctionTemplate::New(GetSetMode)->GetFunction());
+
+  // t.prototype.chipSelect = GetSetChipSelect;
   t->PrototypeTemplate()->Set(String::NewSymbol("chipSelect"),
                               FunctionTemplate::New(GetSetChipSelect)->GetFunction());
-  t->PrototypeTemplate()->Set(String::NewSymbol("bitsPerWord"),
+
+  // t.prototype.bitsPerWord = GetSetBitsPerWord;
+  t->PrototypeTemplate()->Set(String::NewSymbol("size"),
                               FunctionTemplate::New(GetSetBitsPerWord)->GetFunction());
+
+  // t.prototype.bitOrder = GetSetBitOrder;
   t->PrototypeTemplate()->Set(String::NewSymbol("bitOrder"),
                               FunctionTemplate::New(GetSetBitOrder)->GetFunction());
+
+  // t.prototype.maxSpeed = GetSetMaxSpeed;
   t->PrototypeTemplate()->Set(String::NewSymbol("maxSpeed"),
                               FunctionTemplate::New(GetSetMaxSpeed)->GetFunction());
+
+  // t.prototype.halfDuplex = GetSet3Wire;
   t->PrototypeTemplate()->Set(String::NewSymbol("halfDuplex"),
                               FunctionTemplate::New(GetSet3Wire)->GetFunction());
+
+  // t.prototype.delay = GetSetDelay;
+  t->PrototypeTemplate()->Set(String::NewSymbol("delay"),
+  			      FunctionTemplate::New(GetSetDelay)->GetFunction());
+
+  // t.prototype.loopback = GetSetLoop;
   t->PrototypeTemplate()->Set(String::NewSymbol("loopback"),
                               FunctionTemplate::New(GetSetLoop)->GetFunction());
 
+  // var constructor = t; // in context of new.
   constructor = Persistent<Function>::New(t->GetFunction());
+
+  // exports._spi = constructor;
   target->Set(String::NewSymbol("_spi"), constructor);
 
-  // SPI modes
-  NODE_DEFINE_CONSTANT(target, SPI_MODE_0);
-  NODE_DEFINE_CONSTANT(target, SPI_MODE_1);
-  NODE_DEFINE_CONSTANT(target, SPI_MODE_2);
-  NODE_DEFINE_CONSTANT(target, SPI_MODE_3);
+  /* Should be change here.
 
-  // Logic Level High for Chip Select
-  NODE_DEFINE_CONSTANT(target, SPI_CS_HIGH);
+	  // SPI modes
+	  NODE_DEFINE_CONSTANT(target, SPI_MODE_0);
+	  NODE_DEFINE_CONSTANT(target, SPI_MODE_1);
+	  NODE_DEFINE_CONSTANT(target, SPI_MODE_2);
+	  NODE_DEFINE_CONSTANT(target, SPI_MODE_3);
 
-  // No Chip Select
-  NODE_DEFINE_CONSTANT(target, SPI_NO_CS);
+	  // Logic Level High for Chip Select
+	  NODE_DEFINE_CONSTANT(target, SPI_CS_HIGH);
 
+	  // No Chip Select
+	  NODE_DEFINE_CONSTANT(target, SPI_NO_CS);
+  */
+  /* From:
+  	_spi = {
+  		SPI_MODE_0: 0
+  	, SPI_MODE_1: 1
+  	, SPI_MODE_2: 2
+  	, SPI_MODE_3: 3
+
+  	, SPI_NO_CS: 64
+  	, SPI_CS_HIGH: 4
+  	};
+  */
+  /* To:
+  	var spi = require('spi');
+
+  	spi.MODE_0 == 0;
+  	spi.MODE_1 == 1;
+  	spi.MODE_2 == 2;
+  	spi.MODE_3 == 3;
+
+  	spi.CS_LOW == 0;
+  	spi.CS_HIGH == 4;
+  	spi.NO_CS == 64;
+  */
+
+  // Expose constants
+  target->Set(v8::String::NewSymbol("MODE_0"), v8::Integer::New(SPI_MODE_0));
+  target->Set(v8::String::NewSymbol("MODE_1"), v8::Integer::New(SPI_MODE_1));
+  target->Set(v8::String::NewSymbol("MODE_2"), v8::Integer::New(SPI_MODE_2));
+  target->Set(v8::String::NewSymbol("MODE_3"), v8::Integer::New(SPI_MODE_3));
+
+  target->Set(v8::String::NewSymbol("NO_CS"), v8::Integer::New(SPI_NO_CS));
+  target->Set(v8::String::NewSymbol("CS_LOW"), v8::Integer::New(0));
+  target->Set(v8::String::NewSymbol("CS_HIGH"), v8::Integer::New(SPI_CS_HIGH));
+
+  target->Set(v8::String::NewSymbol("ORDER_MSB"), v8::Boolean::New(false));
+  target->Set(v8::String::NewSymbol("ORDER_LSB"), v8::Boolean::New(true));
 }
 
 // new Spi(string device)
 //Handle<Value> Spi::New(const Arguments& args) {
 SPI_FUNC_IMPL(New) {
-
-
   Spi* spi = new Spi();
   spi->Wrap(args.This());
 
@@ -165,7 +228,9 @@ Handle<Value> Spi::Transfer(const Arguments &args) {
   }
 
   Handle<Value> retval = self->full_duplex_transfer(write_buffer, read_buffer,
-                                MAX(write_length, read_length));
+                                MAX(write_length, read_length),
+                                self->m_max_speed, self->m_delay, self->m_bits_per_word);
+
   if (!retval->IsUndefined()) {
     return retval;
   }
@@ -173,23 +238,23 @@ Handle<Value> Spi::Transfer(const Arguments &args) {
   FUNCTION_CHAIN;
 }
 
-Handle<Value> Spi::full_duplex_transfer(char *write, char *read, size_t length) {
-  struct spi_ioc_transfer data = { 0 };
-
-  //  .tx_buf = (unsigned long)write,
-  //  .rx_buf = (unsigned long)read,
-  //  .len = length,
-  //  .delay_usecs = 0, // Unsure exactly what delay is for..
-  //  .speed_hz = 0, // Use the max speed set when opened
-  //  .bits_per_word = 0, // Use the bits per word set when opened
-  //};
+Handle<Value> Spi::full_duplex_transfer(char *write, char *read, size_t length, uint32_t speed, uint16_t delay, uint8_t bits) {
+  struct spi_ioc_transfer data = {
+	  (unsigned long)write,
+	  (unsigned long)read,
+	  length,
+	  speed,
+	  delay, // Still unsure ... just expose to options.
+	  bits,
+  };
 
   int ret = ioctl(this->m_fd, SPI_IOC_MESSAGE(1), &data);
+
   if (ret == 1) {
     return ERROR("Unable to send SPI message");
   }
 
-  return Undefined();
+  return v8::Integer::New(ret);
 }
 
 // This overrides any of the OTHER set functions since modes are predefined
@@ -256,6 +321,7 @@ SPI_FUNC_IMPL(GetSetMaxSpeed) {
 
   FUNCTION_CHAIN;
 }
+
 SPI_FUNC_IMPL(GetSet3Wire) {
   FUNCTION_PREAMBLE;
   GETTER(1, Boolean::New((self->m_mode&SPI_3WIRE) > 0));
@@ -267,6 +333,18 @@ SPI_FUNC_IMPL(GetSet3Wire) {
     self->m_mode &= ~SPI_3WIRE;
   }
   FUNCTION_CHAIN;
+}
+
+// Expose m_delay as "delay"
+SPI_FUNC_IMPL(GetSetDelay) {
+	FUNCTION_PREAMBLE;
+	GETTER(1, Number::New(self->m_delay));
+	REQ_INT_ARG_GT(0, Delay, in_value, 0);
+	ASSERT_NOT_OPEN;
+
+	self->m_delay = in_value;
+
+	FUNCTION_CHAIN;
 }
 
 SPI_FUNC_BOOLEAN_TOGGLE_IMPL(GetSetLoop, SPI_LOOP);
