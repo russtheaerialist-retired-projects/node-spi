@@ -19,7 +19,7 @@ var SPI = require('spi');
 
 var spi = new SPI.Spi('/dev/spidev0.0', {
     'mode': SPI.MODE['MODE_0'],  // always set mode as the first option
-    'chipSelect': SPI.CS['none'] // 'none', 'high', 'low'
+    'chipSelect': SPI.CS['none'] // 'none', 'high' - defaults to low
   }, function(s){s.open();});
 
 var txbuf = new Buffer([ 0x23, 0x48, 0xAF, 0x19, 0x19, 0x19 ]);
