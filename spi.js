@@ -18,69 +18,175 @@
 
 var _spi = require('bindings')('_spi.node');
 
-var MODE = [
-  _spi.SPI_MODE_0,
-  _spi.SPI_MODE_1,
-  _spi.SPI_MODE_2,
-  _spi.SPI_MODE_3
-];
+// Consistance with docs
+var MODE = {
+    MODE_0: _spi.MODE_0, 
+    MODE_1: _spi.MODE_1,
+    MODE_2: _spi.MODE_2,
+    MODE_3: _spi.MODE_3
+};
 
 var CS = {
-  'high': _spi.SPI_CS_HIGH,
-  'low': 0,
-  'none': _spi.SPI_NO_CS
+    none: _spi.NO_CS,
+    high: _spi.CS_HIGH,
+    low:  _spi.CS_LOW
+};
+
+var ORDER = {
+    msb:  _spi.ORDER_MSB,
+    lsb:  _spi.ORDER_LSB
 };
 
 function isFunction(object) {
-   return object && getClass.call(object) == '[object Function]';
+    return object && typeof object == 'function';
 }
 
 var Spi = function(device, options, callback) {
-  this._spi = new _spi._spi();
+    this._spi = new _spi._spi();
 
-  if (callback == undefined) {
-    callback = options;
-    options = {};
-  }
+    options = options || {}; // Default to an empty object
 
-  options = options || { }; // Default to an empty object
-
-  for(var attrname in options) {
-    var value = options[attrname];
-    if (attrname in this._spi) {
-      console.trace("Setting " + attrname + "=" + value);
-      this._spi[attrname](value);
+    for(var attrname in options) {
+	var value = options[attrname];
+	if (attrname in this._spi) {
+	    this._spi[attrname](value);
+	}
+	else
+	    console.log("Unknown option: " + attrname + "=" + value);
     }
-  }
 
-  this._spi.open(device);
+    this.device = device;
 
-  callback(this); // TODO: Update once open is async;
+    isFunction(callback) && callback(this); // TODO: Update once open is async;
+}
+
+Spi.prototype.open = function() {
+    return this._spi.open(this.device);
+}
+
+Spi.prototype.close = function() {
+    return this._spi.close();
 }
 
 Spi.prototype.write = function(buf, callback) {
-  this._spi.transfer(buf, null);
+    this._spi.transfer(buf, new Buffer(buf.length));
 
-  if (callback !== undefined) {
-    callback(this, buf); // TODO: Update once transfer is async;
-  }
+    isFunction(callback) && callback(this, buf); // TODO: Update once open is async;
 }
 
 Spi.prototype.read = function(buf, callback) {
-  this._spi.transfer(null, buf);
+    this._spi.transfer(new Buffer(buf.length), buf);
 
-  if (callback !== undefined) {
-    callback(this, buf); // TODO: Update once transfer is async;
-  }
+    isFunction(callback) && callback(this, buf); // TODO: Update once open is async;
 }
-Spi.prototype.transfer = function(wrbuf, rdbuf, callback) {
-  this._spi.transfer(wrbuf, rdbuf);
 
-  if (callback !== undefined) {
-    callback(this, rdbuf); // TODO: Update once transfer is async;
-  }
+Spi.prototype.transfer = function(txbuf, rxbuf, callback) {
+    // tx and rx buffers need to be the same size
+    this._spi.transfer(txbuf, rxbuf);
+
+    isFunction(callback) && callback(this, rxbuf); // TODO: Update once open is async;
+}
+
+Spi.prototype.mode = function(mode) {
+    if (typeof(mode) != 'undefined')
+	if (mode == MODE['MODE_0'] || mode == MODE['MODE_1'] ||
+	    mode == MODE['MODE_2'] || mode == MODE['MODE_3']) {
+            this._spi['mode'](mode);
+	    return this._spi;
+	}
+        else {
+	    console.log('Illegal mode');
+            return -1;
+	}
+    else
+        return this._spi['mode']();
+}
+
+Spi.prototype.chipSelect = function(cs) {
+    if (typeof(cs) != 'undefined')
+	if (cs == CS['none'] || cs == CS['high'] || cs == MODE['low']) {
+            this._spi['chipSelect'](cs);
+	    return this._spi;
+	}
+        else {
+	    console.log('Illegal chip selection');
+            return -1;
+	}
+    else
+        return this._spi['chipSelect']();
+}
+
+Spi.prototype.bitsPerWord = function(bpw) {
+    if (typeof(bpw) != 'undefined')
+	if (bpw > 1) {
+            this._spi['bitsPerWord'](bpw);
+	    return this._spi;
+	}
+        else {
+	    console.log('Illegal bits per word');
+            return -1;
+	}
+    else
+        return this._spi['bitsPerWord']();
+}
+
+Spi.prototype.bitOrder = function(bo) {
+    if (typeof(bo) != 'undefined')
+	if (bo == ORDER['msb'] || bo == ORDER['lsb']) {
+            this._spi['bitOrder'](bo);
+	    return this._spi;
+	}
+        else {
+	    console.log('Illegal bit order');
+            return -1;
+	}
+    else
+        return this._spi['bitOrder']();
+}
+
+Spi.prototype.maxSpeed = function(speed) {
+    if (typeof(speed) != 'undefined')
+	if (speed > 0) {
+            this._spi['maxSpeed'](speed);
+            return this._spi;
+	}
+        else {
+	    console.log('Speed must be positive');
+	    return -1;
+	}	    
+    else
+	return this._spi['maxSpeed']();
+}
+
+Spi.prototype.halfDuplex = function(duplex) {
+    if (typeof(duplex) != 'undefined')
+	if (duplex) {
+	    this._spi['halfDuplex'](true);
+	    return this._spi;
+	}
+        else {
+	    this._spi['halfDuplex'](false);
+            return this._spi;
+	}
+    else
+	return this._spi['halfDuplex']();
+}
+
+Spi.prototype.loopback = function(loop) {
+    if (typeof(loop) != 'undefined')
+	if (loop) {
+	    this._spi['loopback'](true);
+	    return this._spi;
+	}
+        else {
+	    this._spi['loopback'](false);
+	    return this._spi;
+	}
+    else
+	return this._spi['loopback']();
 }
 
 module.exports.MODE = MODE;
 module.exports.CS = CS;
+module.exports.ORDER = ORDER;
 module.exports.Spi = Spi;

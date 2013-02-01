@@ -35,9 +35,12 @@ class Spi : ObjectWrap {
         static void Initialize(Handle<Object> target);
 
     private:
-        Spi() : m_fd(-1), m_mode(0), m_bits_per_word(8),
-                m_max_speed(1000000) { }
-        ~Spi() { } // Probably close fd if it's open
+        Spi() : m_fd(-1),
+	        m_mode(0),
+	        m_max_speed(1000000),  // default speed in Hz () 1MHz
+	        m_delay(0),            // expose delay to options
+	        m_bits_per_word(8) { } // default bits per word
+                ~Spi() { } // Probably close fd if it's open
 
         SPI_FUNC(New);
         SPI_FUNC(Open);
@@ -47,16 +50,18 @@ class Spi : ObjectWrap {
         SPI_FUNC(GetSetChipSelect);
         SPI_FUNC(GetSetMaxSpeed);
         SPI_FUNC(GetSet3Wire);
+        SPI_FUNC(GetSetDelay);
         SPI_FUNC(GetSetLoop);
         SPI_FUNC(GetSetBitOrder);
         SPI_FUNC(GetSetBitsPerWord);
 
-        Handle<Value> full_duplex_transfer(char *write, char *read, size_t length);
+        Handle<Value> full_duplex_transfer(char *write, char *read, size_t length, uint32_t speed, uint16_t delay, uint8_t bits);
 
         int m_fd;
         int m_mode;
-        int m_bits_per_word;
-        int m_max_speed;
+        uint32_t m_max_speed;
+        uint16_t m_delay;
+        uint8_t m_bits_per_word;
 };
 
 #define ERROR(STR) ThrowException(Exception::Error(String::New(STR)))
