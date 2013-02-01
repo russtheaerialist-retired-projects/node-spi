@@ -1,7 +1,8 @@
 node-spi
 ========
 
-A NodeJS interface to the SPI bus typically found on embedded linux machines.
+A NodeJS interface to the SPI bus typically found on embedded linux machines 
+such as the Raspberry Pi.
 
 There is a native interface and a wrapped JS interface with a slightly
 better API.
@@ -66,13 +67,12 @@ var spi = new SPI.Spi('/dev/spidev0.1');
 ```
 
 Options can include:
-* **mode**: Can be one of 'MODE_0', 'MODE_1', 'MODE_2' or 'MODE_3'. It should always be the first option.
-* **chipSelect**: Can be one of 'none', 'high' or 'low'.
-* **maxSpeed**: The maximum bitrate in Hz.
-* **size**: (AKA: bits per word) Anything other than 8 is not yet supported on the Raspberry Pi.
-* **bitOrder**: true = MSB first, false = LSB first.
-* **delay**:
-* **3Wire**:
+* mode
+* chipSelect
+* maxSpeed
+* bitsPerWord
+* bitOrder
+* delay
 
 Example:
 ```javascript
