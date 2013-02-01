@@ -84,7 +84,7 @@ handy to .open() it if you set all of your options in one shot.
 
 Example:
 ```javascript
-var spi = new SPI.Spi('/dev/spidev0.0', {}, function(s){s.open;});
+var spi = new SPI.Spi('/dev/spidev0.0', {}, function(s){s.open();});
 ```
 
 **open()** - This function takes no arguments and will open the device, setting
