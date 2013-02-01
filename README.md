@@ -149,8 +149,9 @@ if you'd like.
 
 Getting and Sending Data
 ------------------------
-**transfer()** - This takes two buffers, a write and a read buffer. SPI
-only reads when a byte is written so communicaton is usually full duplex.
+**transfer(txbuf, rxbuf, callback)** - This takes two buffers, a write and a 
+read buffer, and optionally a callback. SPI only reads when a byte is written 
+so communicaton is usually full duplex.
 
 Exmple:
 ```javascript
