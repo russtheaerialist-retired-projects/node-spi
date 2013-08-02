@@ -11,6 +11,14 @@ better API.
 the node.js philosophy, but I think its important to get the code working in a 
 blocking manner first, and then introduce the async calls using eio.*
 
+*Note2: I'm back from the dead, and will be resuming working on this project now, sorry for the
+long silence and lack of support*
+
+If you have a project that uses node-spi, please consider adding a link to your project on the wiki:
+
+https://github.com/RussTheAerialist/node-spi/wiki/Projects-that-use-node-spi
+
+
 Basic Usage
 ===========
 
