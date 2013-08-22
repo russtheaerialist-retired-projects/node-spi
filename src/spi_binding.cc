@@ -35,7 +35,7 @@ extern "C" {
     Spi::Initialize(target);
   }
 
-  NODE_MODULE(spi, init);
+  NODE_MODULE(_spi, init);
 }
 
 Persistent<Function> Spi::constructor;
