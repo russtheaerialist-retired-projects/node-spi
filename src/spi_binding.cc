@@ -250,7 +250,7 @@ Handle<Value> Spi::full_duplex_transfer(char *write, char *read, size_t length, 
 
   int ret = ioctl(this->m_fd, SPI_IOC_MESSAGE(1), &data);
 
-  if (ret == 1) {
+  if (ret == -1) {
     return ERROR("Unable to send SPI message");
   }
 
