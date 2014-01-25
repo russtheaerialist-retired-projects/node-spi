@@ -104,7 +104,7 @@ Spi.prototype.mode = function(mode) {
 
 Spi.prototype.chipSelect = function(cs) {
     if (typeof(cs) != 'undefined')
-	if (cs == CS['none'] || cs == CS['high'] || cs == MODE['low']) {
+	if (cs == CS['none'] || cs == CS['high'] || cs == CS['low']) {
             this._spi['chipSelect'](cs);
 	    return this._spi;
 	}
