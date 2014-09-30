@@ -10,6 +10,5 @@
    "main": "./spi",
    "dependencies": {
      "bindings": "*"
-   },
-   "engines": { "node": "0.6" }
+   }
 }
