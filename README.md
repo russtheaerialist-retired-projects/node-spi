@@ -1,14 +1,14 @@
 node-spi
 ========
 
-A NodeJS interface to the SPI bus typically found on embedded linux machines 
+A NodeJS interface to the SPI bus typically found on embedded linux machines
 such as the Raspberry Pi.
 
 There is a native interface and a wrapped JS interface with a slightly
 better API.
 
 *Note: The first version will be blocking. I know this is antithetical to
-the node.js philosophy, but I think its important to get the code working in a 
+the node.js philosophy, but I think its important to get the code working in a
 blocking manner first, and then introduce the async calls using eio.*
 
 *Note2: I'm back from the dead, and will be resuming working on this project now, sorry for the
@@ -52,7 +52,7 @@ the device protocol is defined in one place.
 
 An example project is [node-adafruit-pixel](https://github.com/RussTheAerialist/node-adafruit-pixel)
 which is a node module to control the [AdaFruit RGB Pixels](http://www.adafruit.com/products/738).
-The interface is defined in terms of color and pixels, and not in messages 
+The interface is defined in terms of color and pixels, and not in messages
 being sent via the SPI bus, but it uses node-spi to do it's work.
 
 Native Api Reference
@@ -66,7 +66,7 @@ native interface directly.
 Creating, Opening, and Closing the device
 -----------------------------------------
 
-**\_spi.Spi constructor** - The constructor only requires the path to the spi 
+**\_spi.Spi constructor** - The constructor only requires the path to the spi
 dev file in /dev. Options and a callback are not required but can be specified.
 
 Example:
@@ -77,7 +77,7 @@ var spi = new SPI.Spi('/dev/spidev0.1');
 Options can include:
 * mode
 * chipSelect
-* bitsPerWord
+* size
 * bitOrder
 * maxSpeed
 * halfDuplex
@@ -88,7 +88,7 @@ Example:
 var spi = new SPI.Spi('/dev/spidev0.0', {'mode': SPI.MODE['MODE_0']});
 ```
 
-The callback returns a handle to the newly created SPI object. It might be 
+The callback returns a handle to the newly created SPI object. It might be
 handy to .open() it if you set all of your options in one shot.
 
 Example:
@@ -137,7 +137,7 @@ be used, and if it should go high to select the chip or low.  It defaults to
 signal low.  Pass in SPI_NO_CS to turn off Chip Select, and SPI_CS_HIGH to
 turn on sending high to select.
 
-**bitsPerWord()** - This allows you to specify the bits per word to send.
+**size()** - This allows you to specify the bits per word to send.
 This defaults to 8-bits.  Check your device's datasheet for this value.
 
 **bitOrder()** - This allows you to specify the order of the bits.  We default
@@ -158,8 +158,8 @@ if you'd like.
 
 Getting and Sending Data
 ------------------------
-**transfer(txbuf, rxbuf, callback)** - This takes two buffers, a write and a 
-read buffer, and optionally a callback. SPI only reads when a byte is written 
+**transfer(txbuf, rxbuf, callback)** - This takes two buffers, a write and a
+read buffer, and optionally a callback. SPI only reads when a byte is written
 so communicaton is usually full duplex.
 
 Exmple:
@@ -175,10 +175,10 @@ spi.transfer(txbuf, rxbuf, function(device, buf) {
   });
 ```
 
-As a convenience feature, read and write functions pad zeros in the opposite 
+As a convenience feature, read and write functions pad zeros in the opposite
 direction to make simple read and writes work.
 
-**read(buffer, callback)** - Reads as much data as the given buffer is big. 
+**read(buffer, callback)** - Reads as much data as the given buffer is big.
 The results of the read are available in the callback.
 
 Example:
