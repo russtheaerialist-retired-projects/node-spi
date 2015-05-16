@@ -20,21 +20,21 @@ var _spi = require('bindings')('_spi.node');
 
 // Consistance with docs
 var MODE = {
-    MODE_0: _spi.MODE_0, 
-    MODE_1: _spi.MODE_1,
-    MODE_2: _spi.MODE_2,
-    MODE_3: _spi.MODE_3
+    MODE_0: _spi.SPI_MODE_0, 
+    MODE_1: _spi.SPI_MODE_1,
+    MODE_2: _spi.SPI_MODE_2,
+    MODE_3: _spi.SPI_MODE_3
 };
 
 var CS = {
-    none: _spi.NO_CS,
-    high: _spi.CS_HIGH,
-    low:  _spi.CS_LOW
+    none: _spi.SPI_NO_CS,
+    high: _spi.SPI_CS_HIGH,
+    low:  _spi.SPI_CS_LOW
 };
 
 var ORDER = {
-    msb:  _spi.ORDER_MSB,
-    lsb:  _spi.ORDER_LSB
+    msb:  _spi.SPI_MSB,
+    lsb:  _spi.SPI_LSB
 };
 
 function isFunction(object) {
@@ -190,3 +190,4 @@ module.exports.MODE = MODE;
 module.exports.CS = CS;
 module.exports.ORDER = ORDER;
 module.exports.Spi = Spi;
+console.log(module.exports);

@@ -18,18 +18,18 @@
 
 #include <v8.h>
 #include <node.h>
+#include <node_object_wrap.h>
 
 using namespace v8;
 using namespace node;
 
-#define SPI_FUNC(NAME) static Handle<Value> NAME (const Arguments& args)
-#define SPI_FUNC_IMPL(NAME) Handle<Value> Spi::NAME (const Arguments& args)
-#define SPI_FUNC_EMPTY(NAME) Handle<Value> Spi::NAME (const Arguments& args) { \
-    HandleScope scope;                                                         \
-    return scope.Close(Boolean::New(0));                                       \
+#define SPI_FUNC(NAME) static void NAME (const FunctionCallbackInfo<Value>& args)
+#define SPI_FUNC_IMPL(NAME) void Spi::NAME (const FunctionCallbackInfo<Value>& args)
+#define SPI_FUNC_EMPTY(NAME) void Spi::NAME (const FunctionCallbackInfo<Value>& args) { \
+    args.GetReturnValue().Set(false);  \
 }
 
-class Spi : ObjectWrap {
+class Spi : public ObjectWrap {
     public:
         static Persistent<Function> constructor;
         static void Initialize(Handle<Object> target);
@@ -40,7 +40,9 @@ class Spi : ObjectWrap {
 	        m_max_speed(1000000),  // default speed in Hz () 1MHz
 	        m_delay(0),            // expose delay to options
 	        m_bits_per_word(8) { } // default bits per word
-                ~Spi() { } // Probably close fd if it's open
+
+
+          ~Spi() { } // Probably close fd if it's open
 
         SPI_FUNC(New);
         SPI_FUNC(Open);
@@ -55,77 +57,53 @@ class Spi : ObjectWrap {
         SPI_FUNC(GetSetBitOrder);
         SPI_FUNC(GetSetBitsPerWord);
 
-        Handle<Value> full_duplex_transfer(char *write, char *read, size_t length, uint32_t speed, uint16_t delay, uint8_t bits);
+        void full_duplex_transfer(Isolate* isolate, const FunctionCallbackInfo<Value> &args, char *write, char *read, size_t length, uint32_t speed, uint16_t delay, uint8_t bits);
+        bool require_arguments(Isolate* isolate, const FunctionCallbackInfo<Value>& args, int count);
+        bool get_argument(Isolate *isolate, const FunctionCallbackInfo<Value>& args, int offset, int& value);
+        bool get_argument(Isolate *isolate, const FunctionCallbackInfo<Value>& args, int offset, bool& value);
+        bool get_argument_greater_than(Isolate *isolate, const FunctionCallbackInfo<Value>& args, int offset, int target, int& value);
+        bool get_if_no_args(Isolate *isolate, const FunctionCallbackInfo<Value>& args, int offset, unsigned int value);
+        bool get_if_no_args(Isolate *isolate, const FunctionCallbackInfo<Value>& args, int offset, bool value);
+
+        void get_set_mode_toggle(Isolate *isolate, const FunctionCallbackInfo<Value>& args, int mask);
 
         int m_fd;
-        int m_mode;
+        uint32_t m_mode;
         uint32_t m_max_speed;
         uint16_t m_delay;
         uint8_t m_bits_per_word;
 };
 
-#define ERROR(STR) ThrowException(Exception::Error(String::New(STR)))
+#define EXCEPTION(X) isolate->ThrowException(Exception::TypeError(String::NewFromUtf8(isolate, X)))
 
-#define FUNCTION_PREAMBLE HandleScope scope;                \
+#define FUNCTION_PREAMBLE                          \
+             Isolate* isolate = args.GetIsolate(); \
+             HandleScope scope(isolate);           \
              Spi* self = ObjectWrap::Unwrap<Spi>(args.This())
 
-#define FUNCTION_CHAIN return scope.Close(args.This())
+#define FUNCTION_CHAIN args.GetReturnValue().Set(args.This())
 
-#define ASSERT_OPEN if (self->m_fd == -1) return ThrowException( \
-              Exception::Error(String::New(                 \
-                  "Device not opened"                       \
-              )))
-#define ASSERT_NOT_OPEN if (self->m_fd != -1) return ThrowException( \
-              Exception::Error(String::New(                          \
-                  "Cannot be called once device is opened"           \
-              )))
-
-#define ONLY_IF_OPEN if (self->m_fd == -1) return scope.Close(args.This())
-
-#define REQ_ARGS(N)                                                     \
-  if (args.Length() < (N))                                              \
-    return ThrowException(Exception::TypeError(                         \
-                             String::New("Expected " #N "arguments")));
-
-#define GETTER(N, VAR) if (args.Length() < (N))                         \
-    return scope.Close(VAR)
-
-#define REQ_INT_ARG(I, VAR)                                                    \
-  int VAR;                                                                     \
-  if (args.Length() <= I || !args[I]->IsInt32())                               \
-    return ThrowException(Exception::TypeError(                                \
-                          String::New("Argument " #I " must be an integer" )));\
-  VAR = args[I]->Int32Value();
-
-#define REQ_BOOL_ARG(I, VAR)                                                   \
-  bool VAR;                                                                     \
-  if (args.Length() <= I || !args[I]->IsBoolean())                             \
-    return ThrowException(Exception::TypeError(                                \
-                          String::New("Argument " #I " must be a boolean" ))); \
-  VAR = args[I]->BooleanValue();
+#define ASSERT_OPEN if (self->m_fd == -1) { EXCEPTION("Device not opened"); return; } 
+#define ASSERT_NOT_OPEN if (self->m_fd != -1) { EXCEPTION("Cannot be called once device is opened"); return; }
+#define ONLY_IF_OPEN if (self->m_fd == -1) { FUNCTION_CHAIN; return; }
 
 #define REQ_INT_ARG_GT(I, NAME, VAR, VAL)                                      \
   REQ_INT_ARG(I, VAR);                                                         \
   if (VAR <= VAL)                                                              \
     return ThrowException(Exception::TypeError(                                \
-       String::New(#NAME " must be greater than " #VAL )));
+       String::NewFromUtf8(isolate, #NAME " must be greater than " #VAL )));
 
 #define SPI_FUNC_BOOLEAN_TOGGLE_IMPL(NAME, ARGUMENT)                           \
 SPI_FUNC_IMPL(NAME) {                                                          \
   FUNCTION_PREAMBLE;                                                           \
-  GETTER(1, Boolean::New((self->m_mode&ARGUMENT) > 0));                        \
-  REQ_BOOL_ARG(0, in_value);                                                   \
-  if (in_value) {                                                              \
-    self->m_mode |= ARGUMENT;                                                  \
-  } else {                                                                     \
-    self->m_mode &= ~ARGUMENT;                                                 \
-  }                                                                            \
-  FUNCTION_CHAIN;                                                              \
+  self->get_set_mode_toggle(isolate, args, ARGUMENT);                          \
 }
 
 #define SET_IOCTL_VALUE(FD, CTRL, VALUE)                                       \
   retval = ioctl(FD, CTRL, &(VALUE));                                          \
-  if (retval == -1) return ThrowException(Exception::Error(String::New(        \
-       "Unable to set " #CTRL)));
+  if (retval == -1) {                                                          \
+    EXCEPTION("Unable to set " #CTRL);                                         \
+    return;                                                                    \
+  }
 
 #define MAX(a,b) (a>b ? a:b)

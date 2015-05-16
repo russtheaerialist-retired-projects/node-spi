@@ -33,7 +33,7 @@ var rotate = function(spi, buf) {
 }
 
 var pixelCtrl = new spi.Spi('/dev/spidev1.1', {
-    'mode': spi.MODE[0], // Make sure that mode is the first option!
+    'mode': spi.MODE.MODE_0, // Make sure that mode is the first option!
     'chipSelect': spi.CS['none']
 }, function(spi) {
     console.log("Callback called");

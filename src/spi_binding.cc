@@ -14,16 +14,20 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#define BUILDING_NODE_EXTENSION
+// #define BUILDING_NODE_EXTENSION
 
 #include "spi_binding.h"
 
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
-#include <v8.h>
+
+#ifdef __linux__
+  #include <sys/ioctl.h>
+  #include <linux/spi/spidev.h>
+#else
+  #include "fake_spi.h"
+#endif
 #include <node.h>
 #include <node_buffer.h>
 
@@ -35,77 +39,58 @@ extern "C" {
     Spi::Initialize(target);
   }
 
-  NODE_MODULE(_spi, init);
+  NODE_MODULE(_spi, init)
 }
 
 Persistent<Function> Spi::constructor;
 
 void Spi::Initialize(Handle<Object> target) {
-  HandleScope scope;
+  Isolate* isolate = Isolate::GetCurrent();
+  HandleScope scope(isolate);
 
   // var t = function() {};
-  Local<FunctionTemplate> t = FunctionTemplate::New(New);
+  Local<FunctionTemplate> t = FunctionTemplate::New(isolate, New);
 
   // t = function _spi() {};
-  t->SetClassName(String::NewSymbol("_spi"));
+  t->SetClassName(String::NewFromUtf8(isolate, "_spi"));
   t->InstanceTemplate()->SetInternalFieldCount(1);
 
-  // t.prototype.open = open;
-  t->PrototypeTemplate()->Set(String::NewSymbol("open"),
-                              FunctionTemplate::New(Open)->GetFunction());
-  // t.prototype.close = close;
-  t->PrototypeTemplate()->Set(String::NewSymbol("close"),
-                              FunctionTemplate::New(Close)->GetFunction());
-
-  // t.prototype.transfer = transfer;
-  t->PrototypeTemplate()->Set(String::NewSymbol("transfer"),
-                              FunctionTemplate::New(Transfer)->GetFunction());
-
-  // t.prototype.mode = GetSetMode;
-  t->PrototypeTemplate()->Set(String::NewSymbol("mode"),
-                              FunctionTemplate::New(GetSetMode)->GetFunction());
-
-  // t.prototype.chipSelect = GetSetChipSelect;
-  t->PrototypeTemplate()->Set(String::NewSymbol("chipSelect"),
-                              FunctionTemplate::New(GetSetChipSelect)->GetFunction());
-
-  // t.prototype.bitsPerWord = GetSetBitsPerWord;
-  t->PrototypeTemplate()->Set(String::NewSymbol("size"),
-                              FunctionTemplate::New(GetSetBitsPerWord)->GetFunction());
-
-  // t.prototype.bitOrder = GetSetBitOrder;
-  t->PrototypeTemplate()->Set(String::NewSymbol("bitOrder"),
-                              FunctionTemplate::New(GetSetBitOrder)->GetFunction());
-
-  // t.prototype.maxSpeed = GetSetMaxSpeed;
-  t->PrototypeTemplate()->Set(String::NewSymbol("maxSpeed"),
-                              FunctionTemplate::New(GetSetMaxSpeed)->GetFunction());
-
-  // t.prototype.halfDuplex = GetSet3Wire;
-  t->PrototypeTemplate()->Set(String::NewSymbol("halfDuplex"),
-                              FunctionTemplate::New(GetSet3Wire)->GetFunction());
-
-  // t.prototype.delay = GetSetDelay;
-  t->PrototypeTemplate()->Set(String::NewSymbol("delay"),
-  			      FunctionTemplate::New(GetSetDelay)->GetFunction());
-
-  // t.prototype.loopback = GetSetLoop;
-  t->PrototypeTemplate()->Set(String::NewSymbol("loopback"),
-                              FunctionTemplate::New(GetSetLoop)->GetFunction());
+  NODE_SET_PROTOTYPE_METHOD(t, "open", Open);
+  NODE_SET_PROTOTYPE_METHOD(t, "close", Close);
+  NODE_SET_PROTOTYPE_METHOD(t, "transfer", Transfer);
+  NODE_SET_PROTOTYPE_METHOD(t, "mode", GetSetMode);
+  NODE_SET_PROTOTYPE_METHOD(t, "chipSelect", GetSetChipSelect);
+  NODE_SET_PROTOTYPE_METHOD(t, "size", GetSetBitsPerWord);
+  NODE_SET_PROTOTYPE_METHOD(t, "bitOrder", GetSetBitOrder);
+  NODE_SET_PROTOTYPE_METHOD(t, "maxSpeed", GetSetMaxSpeed);
+  NODE_SET_PROTOTYPE_METHOD(t, "halfDuplex", GetSet3Wire);
+  NODE_SET_PROTOTYPE_METHOD(t, "delay", GetSetDelay);
+  NODE_SET_PROTOTYPE_METHOD(t, "lookback", GetSetLoop);
 
   // var constructor = t; // in context of new.
-  constructor = Persistent<Function>::New(t->GetFunction());
+  constructor.Reset(isolate, t->GetFunction());
 
   // exports._spi = constructor;
-  target->Set(String::NewSymbol("_spi"), constructor);
+  target->Set(String::NewFromUtf8(isolate, "_spi"), t->GetFunction());
+
+  NODE_DEFINE_CONSTANT(target, SPI_MODE_0);
+  NODE_DEFINE_CONSTANT(target, SPI_MODE_1);
+  NODE_DEFINE_CONSTANT(target, SPI_MODE_2);
+  NODE_DEFINE_CONSTANT(target, SPI_MODE_3);
+
+#define SPI_CS_LOW 0  // This doesn't exist normally
+  NODE_DEFINE_CONSTANT(target, SPI_NO_CS);
+  NODE_DEFINE_CONSTANT(target, SPI_CS_HIGH);
+  NODE_DEFINE_CONSTANT(target, SPI_CS_LOW);
+
+#define SPI_MSB false
+#define SPI_LSB true
+  NODE_DEFINE_CONSTANT(target, SPI_MSB);
+  NODE_DEFINE_CONSTANT(target, SPI_LSB);
 
   /* Should be change here.
 
 	  // SPI modes
-	  NODE_DEFINE_CONSTANT(target, SPI_MODE_0);
-	  NODE_DEFINE_CONSTANT(target, SPI_MODE_1);
-	  NODE_DEFINE_CONSTANT(target, SPI_MODE_2);
-	  NODE_DEFINE_CONSTANT(target, SPI_MODE_3);
 
 	  // Logic Level High for Chip Select
 	  NODE_DEFINE_CONSTANT(target, SPI_CS_HIGH);
@@ -136,34 +121,28 @@ void Spi::Initialize(Handle<Object> target) {
   	spi.CS_HIGH == 4;
   	spi.NO_CS == 64;
   */
-
-  // Expose constants
-  target->Set(v8::String::NewSymbol("MODE_0"), v8::Integer::New(SPI_MODE_0));
-  target->Set(v8::String::NewSymbol("MODE_1"), v8::Integer::New(SPI_MODE_1));
-  target->Set(v8::String::NewSymbol("MODE_2"), v8::Integer::New(SPI_MODE_2));
-  target->Set(v8::String::NewSymbol("MODE_3"), v8::Integer::New(SPI_MODE_3));
-
-  target->Set(v8::String::NewSymbol("NO_CS"), v8::Integer::New(SPI_NO_CS));
-  target->Set(v8::String::NewSymbol("CS_LOW"), v8::Integer::New(0));
-  target->Set(v8::String::NewSymbol("CS_HIGH"), v8::Integer::New(SPI_CS_HIGH));
-
-  target->Set(v8::String::NewSymbol("ORDER_MSB"), v8::Boolean::New(false));
-  target->Set(v8::String::NewSymbol("ORDER_LSB"), v8::Boolean::New(true));
 }
 
 // new Spi(string device)
-//Handle<Value> Spi::New(const Arguments& args) {
+//Handle<Value> Spi::New(const FunctionCallbackInfo<Value>& args) {
 SPI_FUNC_IMPL(New) {
-  Spi* spi = new Spi();
-  spi->Wrap(args.This());
+  Isolate *isolate = args.GetIsolate();
+  HandleScope scope(isolate);
 
-  return args.This();
+  if (args.IsConstructCall()) {
+    Spi* spi = new Spi();
+    spi->Wrap(args.This());
+    args.GetReturnValue().Set(args.This());
+  } else {
+    Local<Function> cons = Local<Function>::New(isolate, constructor);
+    args.GetReturnValue().Set(cons->NewInstance());
+  }
 }
 
 // TODO: Make Non-blocking once basic functionality is proven
-Handle<Value> Spi::Open(const Arguments& args) {
+void Spi::Open(const FunctionCallbackInfo<Value>& args) {
   FUNCTION_PREAMBLE;
-  REQ_ARGS(1);
+  if (!self->require_arguments(isolate, args, 1)) { return; }
   ASSERT_NOT_OPEN;
 
   String::Utf8Value device(args[0]->ToString());
@@ -171,7 +150,8 @@ Handle<Value> Spi::Open(const Arguments& args) {
 
   self->m_fd = open(*device, O_RDWR); // Blocking!
   if (self->m_fd < 0) {
-    return ThrowException(Exception::Error(String::New("Unable to open device")));
+    EXCEPTION("Unable to open device");
+    return;
   }
 
   SET_IOCTL_VALUE(self->m_fd, SPI_IOC_WR_MODE, self->m_mode);
@@ -184,7 +164,7 @@ Handle<Value> Spi::Open(const Arguments& args) {
   FUNCTION_CHAIN;
 }
 
-Handle<Value> Spi::Close(const Arguments &args) {
+void Spi::Close(const FunctionCallbackInfo<Value> &args) {
   FUNCTION_PREAMBLE;
   ONLY_IF_OPEN;
 
@@ -195,13 +175,14 @@ Handle<Value> Spi::Close(const Arguments &args) {
 }
 
 // tranfer(write_buffer, read_buffer);
-Handle<Value> Spi::Transfer(const Arguments &args) {
+void Spi::Transfer(const FunctionCallbackInfo<Value> &args) {
   FUNCTION_PREAMBLE;
   ASSERT_OPEN;
-  REQ_ARGS(2);
+    if (!self->require_arguments(isolate, args, 2)) { return; }
 
   if ((args[0]->IsNull()) && (args[1]->IsNull())) {
-    return ERROR("Both buffers cannot be null");
+    EXCEPTION("Both buffers cannot be null");
+    return;
   }
 
   char *write_buffer = NULL;
@@ -224,61 +205,73 @@ Handle<Value> Spi::Transfer(const Arguments &args) {
   }
 
   if (write_length > 0 && read_length > 0 && write_length != read_length) {
-    return ERROR("Read and write buffers MUST be the same length");
+    EXCEPTION("Read and write buffers MUST be the same length");
+    return;
   }
 
-  Handle<Value> retval = self->full_duplex_transfer(write_buffer, read_buffer,
+  self->full_duplex_transfer(isolate, args, write_buffer, read_buffer,
                                 MAX(write_length, read_length),
                                 self->m_max_speed, self->m_delay, self->m_bits_per_word);
 
-  if (!retval->IsUndefined()) {
-    return retval;
-  }
-
-  FUNCTION_CHAIN;
 }
 
-Handle<Value> Spi::full_duplex_transfer(char *write, char *read, size_t length, uint32_t speed, uint16_t delay, uint8_t bits) {
+void Spi::full_duplex_transfer(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value> &args,
+  char *write,
+  char *read,
+  size_t length,
+  uint32_t speed,
+  uint16_t delay,
+  uint8_t bits
+) {
   struct spi_ioc_transfer data = {
 	  (unsigned long)write,
 	  (unsigned long)read,
 	  length,
 	  speed,
 	  delay, // Still unsure ... just expose to options.
-	  bits,
+	  bits
   };
 
   int ret = ioctl(this->m_fd, SPI_IOC_MESSAGE(1), &data);
 
   if (ret == -1) {
-    return ERROR("Unable to send SPI message");
+    EXCEPTION("Unable to send SPI message");
+    return;
   }
 
-  return v8::Integer::New(ret);
+  args.GetReturnValue().Set(ret);
 }
 
 // This overrides any of the OTHER set functions since modes are predefined
 // sets of options.
 SPI_FUNC_IMPL(GetSetMode) {
   FUNCTION_PREAMBLE;
-  GETTER(1, Number::New(self->m_mode));
-  REQ_INT_ARG(0, in_mode);
+
+  if (self->get_if_no_args(isolate, args, 0, self->m_mode)) { return; }
+  int in_mode;
+  if (!self->get_argument(isolate, args, 0, in_mode)) { return; }
+
   ASSERT_NOT_OPEN;
 
   if (in_mode == SPI_MODE_0 || in_mode == SPI_MODE_1 ||
       in_mode == SPI_MODE_2 || in_mode == SPI_MODE_3) {
     self->m_mode = in_mode;
   } else {
-    ThrowException(Exception::RangeError(String::New(
-      "Argument 1 must be one of the SPI_MODE_X constants"
-    )));
+    EXCEPTION("Argument 1 must be one of the SPI_MODE_X constants");
+    return;
   }
+
   FUNCTION_CHAIN;
 }
 SPI_FUNC_IMPL(GetSetChipSelect) {
   FUNCTION_PREAMBLE;
-  GETTER(1, Number::New(self->m_mode&(SPI_CS_HIGH|SPI_NO_CS)));
-  REQ_INT_ARG(0, in_value);
+
+  if (self->get_if_no_args(isolate, args, 0, self->m_mode&(SPI_CS_HIGH|SPI_NO_CS))) { return; }
+  int in_value;
+  if (!self->get_argument(isolate, args, 0, in_value)) { return; }
+
   ASSERT_NOT_OPEN;
 
   switch(in_value) {
@@ -300,8 +293,10 @@ SPI_FUNC_IMPL(GetSetChipSelect) {
 
 SPI_FUNC_IMPL(GetSetBitsPerWord) {
   FUNCTION_PREAMBLE;
-  GETTER(1, Number::New(self->m_bits_per_word));
-  REQ_INT_ARG_GT(0, BitsPerWord, in_value, 0);
+  if (self->get_if_no_args(isolate, args, 0, (unsigned int)self->m_bits_per_word)) { return; }
+
+  int in_value;
+  if (!self->get_argument_greater_than(isolate, args, 0, 0, in_value)) { return; }
   ASSERT_NOT_OPEN;
 
   // TODO: Bounds checking?  Need to look up what the max value is
@@ -312,8 +307,11 @@ SPI_FUNC_IMPL(GetSetBitsPerWord) {
 
 SPI_FUNC_IMPL(GetSetMaxSpeed) {
   FUNCTION_PREAMBLE;
-  GETTER(1, Number::New(self->m_max_speed));
-  REQ_INT_ARG_GT(0, MaxSpeed, in_value, 0);
+
+  if (self->get_if_no_args(isolate, args, 0, self->m_max_speed)) { return; }
+
+  int in_value;
+  if (!self->get_argument_greater_than(isolate, args, 0, 0, in_value)) { return; }
   ASSERT_NOT_OPEN;
 
   // TODO: Bounds Checking? Need to look up what the max value is
@@ -324,8 +322,11 @@ SPI_FUNC_IMPL(GetSetMaxSpeed) {
 
 SPI_FUNC_IMPL(GetSet3Wire) {
   FUNCTION_PREAMBLE;
-  GETTER(1, Boolean::New((self->m_mode&SPI_3WIRE) > 0));
-  REQ_BOOL_ARG(0, in_value);
+
+  if (self->get_if_no_args(isolate, args, 0, (self->m_mode&SPI_3WIRE) > 0)) { return; }
+
+  bool in_value;
+  if (!self->get_argument(isolate, args, 0, in_value)) { return; }
 
   if (in_value) {
     self->m_mode |= SPI_3WIRE;
@@ -338,8 +339,11 @@ SPI_FUNC_IMPL(GetSet3Wire) {
 // Expose m_delay as "delay"
 SPI_FUNC_IMPL(GetSetDelay) {
 	FUNCTION_PREAMBLE;
-	GETTER(1, Number::New(self->m_delay));
-	REQ_INT_ARG_GT(0, Delay, in_value, 0);
+
+	if (self->get_if_no_args(isolate, args, 0, (unsigned int)self->m_delay)) { return; }
+
+  int in_value;
+	if (!self->get_argument_greater_than(isolate, args, 0, 0, in_value)) { return; }
 	ASSERT_NOT_OPEN;
 
 	self->m_delay = in_value;
@@ -349,3 +353,125 @@ SPI_FUNC_IMPL(GetSetDelay) {
 
 SPI_FUNC_BOOLEAN_TOGGLE_IMPL(GetSetLoop, SPI_LOOP);
 SPI_FUNC_BOOLEAN_TOGGLE_IMPL(GetSetBitOrder, SPI_LSB_FIRST);
+
+#define ERROR_EXPECTED_ARGUMENTS(N) "Expected " #N "arguments"
+#define ERROR_ARGUMENT_NOT_INTEGER(I) "Argument " #I " must be an integer"
+#define ERROR_ARGUMENT_NOT_BOOLEAN(I) "Argument " #I " must be an boolean"
+#define ERROR_OUT_OF_RANGE(I, V, R, M) "Argument " #I " must be " #R " " #M " but was " #V
+
+/********************************************************************************************************************* 
+
+Internal Functions */
+
+bool
+Spi::require_arguments(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value>& args,
+  int count
+) {
+    if (args.Length() < count) {
+      EXCEPTION(ERROR_EXPECTED_ARGUMENTS(count));
+      return false;
+    }
+
+    return true;
+}
+
+bool
+Spi::get_argument(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value>& args,
+  int offset,
+  int& value
+) {
+  if (args.Length() <= offset || !args[offset]->IsInt32()) {
+    EXCEPTION(ERROR_ARGUMENT_NOT_INTEGER(offset));
+    return false;
+  }
+
+  value = args[offset]->Int32Value();
+  return true;
+}
+
+bool
+Spi::get_argument(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value>& args,
+  int offset,
+  bool& value
+) {
+  if (args.Length() <= offset || !args[offset]->IsBoolean()) {
+    EXCEPTION(ERROR_ARGUMENT_NOT_BOOLEAN(offset));
+    return false;
+  }
+
+  value = args[offset]->BooleanValue();
+  return true;
+}
+
+bool
+Spi::get_if_no_args(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value>& args,
+  int offset,
+  unsigned int value
+) {
+  if (args.Length() <= offset) {
+    args.GetReturnValue().Set(value);
+    return true;
+  }
+
+  return false;
+}
+
+bool
+Spi::get_if_no_args(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value>& args,
+  int offset,
+  bool value
+) {
+  if (args.Length() <= offset) {
+    args.GetReturnValue().Set(value);
+    return true;
+  }
+
+  return false;
+}
+
+bool
+Spi::get_argument_greater_than(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value>& args,
+  int offset,
+  int target,
+  int& value
+) {
+  if (!get_argument(isolate, args, offset, value)) { return false; }
+
+  if (value <= target) {
+    EXCEPTION(ERROR_OUT_OF_RANGE(offset, value, >, target));
+    return false;
+  }
+
+  return true;
+}
+
+void
+Spi::get_set_mode_toggle(
+  Isolate *isolate,
+  const FunctionCallbackInfo<Value>& args,
+  int mask
+) {
+    if (get_if_no_args(isolate, args, 0, (m_mode&mask) > 0)) { return; }
+
+    bool in_value;
+    if (!get_argument(isolate, args, 0, in_value)) { return; }
+
+    if (in_value) {                                                              
+      m_mode |= mask;                                                  
+    } else {                                                                     
+      m_mode &= ~mask;                                                 
+    }                                                                            
+    FUNCTION_CHAIN;                                                              
+}
