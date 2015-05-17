@@ -33,8 +33,8 @@ var CS = {
 };
 
 var ORDER = {
-    msb:  _spi.SPI_MSB,
-    lsb:  _spi.SPI_LSB
+    msb:  _spi.SPI_MSB == 1,
+    lsb:  _spi.SPI_LSB == 1
 };
 
 function isFunction(object) {
@@ -61,6 +61,7 @@ var Spi = function(device, options, callback) {
 }
 
 Spi.prototype.open = function() {
+    console.log(this);
     return this._spi.open(this.device);
 }
 

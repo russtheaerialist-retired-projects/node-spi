@@ -88,39 +88,6 @@ void Spi::Initialize(Handle<Object> target) {
   NODE_DEFINE_CONSTANT(target, SPI_MSB);
   NODE_DEFINE_CONSTANT(target, SPI_LSB);
 
-  /* Should be change here.
-
-	  // SPI modes
-
-	  // Logic Level High for Chip Select
-	  NODE_DEFINE_CONSTANT(target, SPI_CS_HIGH);
-
-	  // No Chip Select
-	  NODE_DEFINE_CONSTANT(target, SPI_NO_CS);
-  */
-  /* From:
-  	_spi = {
-  		SPI_MODE_0: 0
-  	, SPI_MODE_1: 1
-  	, SPI_MODE_2: 2
-  	, SPI_MODE_3: 3
-
-  	, SPI_NO_CS: 64
-  	, SPI_CS_HIGH: 4
-  	};
-  */
-  /* To:
-  	var spi = require('spi');
-
-  	spi.MODE_0 == 0;
-  	spi.MODE_1 == 1;
-  	spi.MODE_2 == 2;
-  	spi.MODE_3 == 3;
-
-  	spi.CS_LOW == 0;
-  	spi.CS_HIGH == 4;
-  	spi.NO_CS == 64;
-  */
 }
 
 // new Spi(string device)
@@ -155,11 +122,8 @@ void Spi::Open(const FunctionCallbackInfo<Value>& args) {
   }
 
   SET_IOCTL_VALUE(self->m_fd, SPI_IOC_WR_MODE, self->m_mode);
-  SET_IOCTL_VALUE(self->m_fd, SPI_IOC_RD_MODE, self->m_mode);
   SET_IOCTL_VALUE(self->m_fd, SPI_IOC_WR_BITS_PER_WORD, self->m_bits_per_word);
-  SET_IOCTL_VALUE(self->m_fd, SPI_IOC_RD_BITS_PER_WORD, self->m_bits_per_word);
   SET_IOCTL_VALUE(self->m_fd, SPI_IOC_WR_MAX_SPEED_HZ, self->m_max_speed);
-  SET_IOCTL_VALUE(self->m_fd, SPI_IOC_RD_MAX_SPEED_HZ, self->m_max_speed);
 
   FUNCTION_CHAIN;
 }
@@ -475,3 +439,4 @@ Spi::get_set_mode_toggle(
     }                                                                            
     FUNCTION_CHAIN;                                                              
 }
+
