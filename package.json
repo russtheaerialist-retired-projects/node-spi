@@ -1,6 +1,6 @@
 {
    "name": "spi",
-   "version": "0.1.1",
+   "version": "0.2",
    "description": "JS Interface for the SPI bus",
    "author": "Russell Hay <me@russellhay.com> (http://russellhay.com)",
    "repository": {
