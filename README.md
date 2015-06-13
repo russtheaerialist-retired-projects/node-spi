@@ -7,16 +7,14 @@ such as the Raspberry Pi.
 There is a native interface and a wrapped JS interface with a slightly
 better API.
 
-*Note: The first version will be blocking. I know this is antithetical to
-the node.js philosophy, but I think its important to get the code working in a
-blocking manner first, and then introduce the async calls using eio.*
-
-*Note2: I'm back from the dead, and will be resuming working on this project now, sorry for the
-long silence and lack of support*
-
 If you have a project that uses node-spi, please consider adding a link to your project on the wiki:
 
 https://github.com/RussTheAerialist/node-spi/wiki/Projects-that-use-node-spi
+
+The following versions exist
+
+* node-spi 0.1.x - node 0.10.x
+* node-spi 0.2 - node 0.12.x
 
 
 Basic Usage
