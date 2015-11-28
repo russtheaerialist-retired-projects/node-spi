@@ -61,7 +61,6 @@ var Spi = function(device, options, callback) {
 }
 
 Spi.prototype.open = function() {
-    console.log(this);
     return this._spi.open(this.device);
 }
 
@@ -191,4 +190,3 @@ module.exports.MODE = MODE;
 module.exports.CS = CS;
 module.exports.ORDER = ORDER;
 module.exports.Spi = Spi;
-console.log(module.exports);
