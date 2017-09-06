@@ -19,7 +19,11 @@
 #include "spi_binding.h"
 
 #include <stdio.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 
 #ifdef __linux__
