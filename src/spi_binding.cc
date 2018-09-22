@@ -102,7 +102,8 @@ SPI_FUNC_IMPL(New) {
     args.GetReturnValue().Set(args.This());
   } else {
     Local<Function> cons = Local<Function>::New(isolate, constructor);
-    args.GetReturnValue().Set(cons->NewInstance());
+    args.GetReturnValue().Set(cons->NewInstance(Isolate::GetCurrent()->GetCurrentContext(),
+                                                0, NULL).ToLocalChecked());
   }
 }
 
